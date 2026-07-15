@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Client = require('../models/Client');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authmiddleware');
 
 // 1. Add New Client / Loan
 router.post('/add', protect, async (req, res) => {
