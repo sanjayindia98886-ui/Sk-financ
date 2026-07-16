@@ -14,8 +14,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 // अपने 'authController' को यहाँ जोड़ें (Path चेक कर लें)
 // अगर authController.js और server.js एक ही फोल्डर में हैं, तो './' का इस्तेमाल करें
-const { registerUser, loginUser } = require('./authController'); 
 
+const { registerUser, loginUser } = require('./controllers/authController');
 app.post('/api/register', registerUser);
 app.post('/api/login', loginUser);
 
