@@ -29,7 +29,7 @@ const {
 } = require('./controllers/authController');
 
 const User = require('./models/User'); 
-const Client = require('./models/Client'); // Imported your original Client model here
+const Client = require('./models/Client'); 
 
 // Token Verification Middleware
 const protect = (req, res, next) => {
@@ -64,7 +64,7 @@ app.get('/api/admin/pending', protect, async (req, res) => {
 });
 app.post('/api/admin/action', protect, approveOrBlockUser);
 
-// Client Management Routes - Fetch all accounts and calculate live dashboard statistics
+// Client Management Routes - Fetch all accounts with live calculations for front-end filters
 app.get('/clients/all', protect, async (req, res) => {
     try {
         const allClients = await Client.find({ userId: req.user.id });
@@ -72,15 +72,32 @@ app.get('/clients/all', protect, async (req, res) => {
         let totalOutflow = 0;
         let totalInflow = 0;
         let totalPending = 0;
-        
-        allClients.forEach(c => {
-            totalOutflow += (Number(c.totalLoanAmount) || 0);
-            totalInflow += (Number(c.collectedAmount) || 0);
-            totalPending += ((Number(c.totalReturnAmount) || Number(c.totalLoanAmount)) - (Number(c.collectedAmount) || 0));
+
+        const processedClients = allClients.map(c => {
+            const loanAmt = Number(c.totalLoanAmount) || 0;
+            const returnAmt = Number(c.totalReturnAmount) || loanAmt;
+            const collected = Number(c.collectedAmount) || 0;
+            const penaltyAmt = Number(c.penalty) || 0;
+
+            const pendingBalance = (returnAmt + penaltyAmt) - collected;
+
+            const daysPassed = Math.floor((new Date() - new Date(c.startDate)) / (1000 * 60 * 60 * 24));
+            const pendingDays = (Number(c.totalDays) || 0) - daysPassed;
+
+            totalOutflow += loanAmt;
+            totalInflow += collected;
+            totalPending += pendingBalance > 0 ? pendingBalance : 0;
+
+            return {
+                ...c._doc,
+                id: c._id,
+                pendingBalance,
+                pendingDays
+            };
         });
         
         res.json({ 
-            clients: allClients, 
+            clients: processedClients, 
             stats: { 
                 totalOutflow, 
                 totalInflow, 
@@ -112,6 +129,68 @@ app.post('/clients/add', protect, async (req, res) => {
         res.status(201).json({ message: 'Account started successfully!' });
     } catch (error) {
         res.status(500).json({ message: 'Server error: ' + error.message });
+    }
+});
+
+// Collect Payment Route
+app.put('/clients/collect/:id', protect, async (req, res) => {
+    try {
+        const { amountReceived } = req.body;
+        const client = await Client.findById(req.params.id);
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+        
+        client.collectedAmount += Number(amountReceived);
+        
+        client.history.push({
+            type: 'Payment',
+            amount: Number(amountReceived),
+            date: new Date(),
+            note: 'Amount collected'
+        });
+        
+        await client.save();
+        res.json({ message: 'Amount collected successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Add Penalty Route
+app.put('/clients/add-penalty/:id', protect, async (req, res) => {
+    try {
+        const { amount, reason } = req.body;
+        const client = await Client.findById(req.params.id);
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+        
+        client.penalty += Number(amount);
+        
+        client.penaltyHistory.push({
+            amount: Number(amount),
+            date: new Date(),
+            reason: reason || 'Late payment penalty'
+        });
+        
+        await client.save();
+        res.json({ message: 'Penalty added successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete Client Account Route
+app.delete('/clients/delete/:id', protect, async (req, res) => {
+    try {
+        const client = await Client.findByIdAndDelete(req.params.id);
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+        res.json({ message: 'Client account deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
 
