@@ -18,11 +18,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    role: {
-        type: String,
-        enum: ['super_admin', 'admin', 'employee'],
-        default: 'employee'
-    },
+  role: {
+    type: String,
+    enum: ['user', 'employee', 'admin', 'super_admin'], 
+    default: 'user'
+},
     adminId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
