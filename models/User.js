@@ -60,7 +60,7 @@ const userSchema = new mongoose.Schema({
     },
     securityAnswer1: {
         type: String,
-        required: true
+        required: false
     },
     securityQuestion2: {
         type: String,
@@ -68,7 +68,7 @@ const userSchema = new mongoose.Schema({
     },
     securityAnswer2: {
         type: String,
-        required: true
+        required: false
     },
     createdAt: {
         type: Date,
