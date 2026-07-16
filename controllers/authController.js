@@ -2,7 +2,6 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// 1. Register User
 const registerUser = async (req, res) => {
     try {
         const { name, email, password, phone, role, adminId } = req.body;
@@ -42,7 +41,6 @@ const registerUser = async (req, res) => {
     }
 };
 
-// 2. Login User
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -57,6 +55,13 @@ const loginUser = async (req, res) => {
             return res.status(400).json({ message: 'Invalid email or password!' });
         }
 
+        if (!user.isApproved && user.status === 'blocked') {
+            return res.status(403).json({
+                status: 'BLOCKED',
+                message: 'Your account has been blocked by the admin.'
+            });
+        }
+
         if (!user.isApproved) {
             return res.status(403).json({ 
                 status: 'PENDING_APPROVAL',
@@ -64,11 +69,14 @@ const loginUser = async (req, res) => {
             });
         }
 
-        if (user.paymentStatus === 'Unpaid' || user.paymentStatus === 'Pending') {
-            return res.status(402).json({ 
-                status: 'PAYMENT_PENDING',
-                message: 'Your payment is pending. Please complete the payment to access the dashboard.' 
-            });
+        if (user.paymentStatus === 'Unpaid' || user.paymentStatus === 'Pending' || user.paymentStatus === 'paid') {
+            const currentStatus = user.paymentStatus;
+            if (currentStatus !== 'Paid' && currentStatus !== 'paid') {
+                return res.status(402).json({ 
+                    status: 'PAYMENT_PENDING',
+                    message: 'Your payment is pending. Please complete the payment to access the dashboard.' 
+                });
+            }
         }
 
         const token = jwt.sign(
@@ -95,7 +103,6 @@ const loginUser = async (req, res) => {
     }
 };
 
-// 3. Get User Profile
 const getUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
@@ -109,7 +116,6 @@ const getUserProfile = async (req, res) => {
     }
 };
 
-// 4. Update Company Name
 const updateCompanyName = async (req, res) => {
     try {
         const { companyName } = req.body;
@@ -126,17 +132,21 @@ const updateCompanyName = async (req, res) => {
     }
 };
 
-// 5. Get Pending Users
 const getPendingUsers = async (req, res) => {
     try {
-        const pendingUsers = await User.find({ isApproved: false }).select('-password');
-        res.json(pendingUsers);
+        const pendingOrBlockedUsers = await User.find({
+            $or: [
+                { isApproved: false },
+                { status: 'blocked' },
+                { isBlocked: true }
+            ]
+        }).select('-password');
+        res.json(pendingOrBlockedUsers);
     } catch (error) {
         res.status(500).json({ message: 'Server error: ' + error.message });
     }
 };
 
-// 6. Approve or Block User
 const approveOrBlockUser = async (req, res) => {
     try {
         const { userId, action } = req.body;
@@ -149,11 +159,16 @@ const approveOrBlockUser = async (req, res) => {
         if (action === 'approve') {
             user.isApproved = true;
             user.paymentStatus = 'Paid';
+            user.status = 'active';
+            user.isBlocked = false;
             await user.save();
             return res.json({ message: 'User approved successfully!', user });
         } else if (action === 'block') {
-            await User.findByIdAndDelete(userId);
-            return res.json({ message: 'User request rejected successfully!' });
+            user.isApproved = false;
+            user.status = 'blocked';
+            user.isBlocked = true;
+            await user.save();
+            return res.json({ message: 'User access blocked successfully!', user });
         }
 
     } catch (error) {
@@ -161,7 +176,6 @@ const approveOrBlockUser = async (req, res) => {
     }
 };
 
-// 7. Forgot Password
 const forgotPassword = async (req, res) => {
     try {
         const { email, securityAnswer1, securityAnswer2, newPassword } = req.body;

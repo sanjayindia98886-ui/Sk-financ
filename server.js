@@ -5,7 +5,6 @@ require('dotenv').config();
 
 const app = express();
 
-// CORS Configuration
 app.use(cors({
     origin: ['https://sk-financ-app.netlify.app', 'http://localhost:3000'],
     credentials: true,
@@ -15,10 +14,8 @@ app.use(cors({
 
 app.use(express.json());
 
-// Connect Database
 connectDB();
 
-// Import Controllers
 const { 
     registerUser, 
     loginUser, 
@@ -31,7 +28,6 @@ const {
 const User = require('./models/User'); 
 const Client = require('./models/Client'); 
 
-// Token Verification Middleware
 const protect = (req, res, next) => {
     const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
     if (!token) {
@@ -47,24 +43,14 @@ const protect = (req, res, next) => {
     }
 };
 
-// Auth & Profile Routes
 app.post('/api/register', registerUser);
 app.post('/api/login', loginUser);
 app.get('/api/profile', protect, getUserProfile); 
 app.put('/api/update-company', protect, updateCompanyName);
 
-// Admin Control Routes
-app.get('/api/admin/pending', protect, async (req, res) => {
-    try {
-        const allUsers = await User.find({}).select('-password');
-        res.json(allUsers);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error: ' + error.message });
-    }
-});
+app.get('/api/admin/pending', protect, getPendingUsers);
 app.post('/api/admin/action', protect, approveOrBlockUser);
 
-// Client Management Routes - Fetch all accounts with live calculations for front-end filters
 app.get('/clients/all', protect, async (req, res) => {
     try {
         const allClients = await Client.find({ userId: req.user.id });
@@ -110,7 +96,6 @@ app.get('/clients/all', protect, async (req, res) => {
     }
 });
 
-// Client Management Routes - Save new client tied to specific logged-in user
 app.post('/clients/add', protect, async (req, res) => {
     try {
         const { clientName, loanType, totalLoanAmount, totalReturnAmount, dailyInstallment, totalDays } = req.body;
@@ -132,7 +117,6 @@ app.post('/clients/add', protect, async (req, res) => {
     }
 });
 
-// Collect Payment Route
 app.put('/clients/collect/:id', protect, async (req, res) => {
     try {
         const { amountReceived } = req.body;
@@ -157,7 +141,6 @@ app.put('/clients/collect/:id', protect, async (req, res) => {
     }
 });
 
-// Add Penalty Route
 app.put('/clients/add-penalty/:id', protect, async (req, res) => {
     try {
         const { amount, reason } = req.body;
@@ -181,7 +164,6 @@ app.put('/clients/add-penalty/:id', protect, async (req, res) => {
     }
 });
 
-// Delete Client Account Route
 app.delete('/clients/delete/:id', protect, async (req, res) => {
     try {
         const client = await Client.findByIdAndDelete(req.params.id);
@@ -194,7 +176,6 @@ app.delete('/clients/delete/:id', protect, async (req, res) => {
     }
 });
 
-// Server Listen (Render Port Fix)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log('Server is running on port ' + PORT);
