@@ -18,11 +18,20 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-  role: {
-    type: String,
-    enum: ['user', 'employee', 'admin', 'super_admin'], 
-    default: 'user'
-},
+    role: {
+        type: String,
+        enum: ['user', 'employee', 'admin', 'super_admin'], 
+        default: 'user'
+    },
+    status: {
+        type: String,
+        enum: ['active', 'blocked', 'pending'],
+        default: 'pending'
+    },
+    isBlocked: {
+        type: Boolean,
+        default: false
+    },
     adminId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -34,13 +43,14 @@ const userSchema = new mongoose.Schema({
             return this.role === 'super_admin'; 
         }
     },
-paymentStatus: {
-    type: String,
-    enum: ['Paid', 'Unpaid', 'Pending', 'paid'],
-    default: function() {
-        return this.role === 'admin' ? 'Paid' : 'Unpaid';
-    }
-}, licenseStatus: {
+    paymentStatus: {
+        type: String,
+        enum: ['Paid', 'Unpaid', 'Pending', 'paid'],
+        default: function() {
+            return this.role === 'admin' ? 'Paid' : 'Unpaid';
+        }
+    }, 
+    licenseStatus: {
         type: String,
         enum: ['active', 'expired'],
         default: 'active'

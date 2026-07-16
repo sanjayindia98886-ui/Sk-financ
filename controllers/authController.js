@@ -134,14 +134,8 @@ const updateCompanyName = async (req, res) => {
 
 const getPendingUsers = async (req, res) => {
     try {
-        const pendingOrBlockedUsers = await User.find({
-            $or: [
-                { isApproved: false },
-                { status: 'blocked' },
-                { isBlocked: true }
-            ]
-        }).select('-password');
-        res.json(pendingOrBlockedUsers);
+        const allUsers = await User.find({}).select('-password');
+        res.json(allUsers);
     } catch (error) {
         res.status(500).json({ message: 'Server error: ' + error.message });
     }
