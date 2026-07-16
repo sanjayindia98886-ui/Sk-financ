@@ -7,11 +7,11 @@ const User = require('../models/User');
 
 const { registerUser, loginUser, getUserProfile, updateCompanyName } = authController;
 
-router.post('/register', registerUser);
+router.post('/register', registerUser || authController.registerUser);
 
-router.post('/login', loginUser);
+router.post('/login', loginUser || authController.loginUser);
 
-router.get('/me', protect, getUserProfile);
+router.get('/me', protect, getUserProfile || authController.getUserProfile);
 
 router.put('/update-company', protect, updateCompanyName);
 
@@ -44,7 +44,7 @@ router.put('/forgot-password', async (req, res) => {
 router.get('/admin/users', protect, async (req, res) => {
     try {
         const adminUser = await User.findById(req.user.id);
-        if (!adminUser || adminUser.role !== 'super_admin') {
+        if (adminUser.role !== 'super_admin') {
             return res.status(403).json({ message: 'Unauthorized access! You are not a super admin.' });
         }
 
@@ -58,20 +58,15 @@ router.get('/admin/users', protect, async (req, res) => {
 router.put('/admin/update-status/:id', protect, async (req, res) => {
     try {
         const adminUser = await User.findById(req.user.id);
-        if (!adminUser || adminUser.role !== 'super_admin') {
+        if (adminUser.role !== 'super_admin') {
             return res.status(403).json({ message: 'Unauthorized access!' });
         }
 
-        const { isApproved, paymentStatus, role } = req.body;
+        const { isApproved, paymentStatus } = req.body;
         
-        const updateData = {};
-        if (isApproved !== undefined) updateData.isApproved = isApproved;
-        if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus;
-        if (role !== undefined) updateData.role = role;
-
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            updateData,
+            { isApproved, paymentStatus },
             { new: true }
         ).select('-password');
 
