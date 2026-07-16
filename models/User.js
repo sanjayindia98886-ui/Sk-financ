@@ -34,14 +34,13 @@ const userSchema = new mongoose.Schema({
             return this.role === 'super_admin'; 
         }
     },
-    paymentStatus: {
-        type: String,
-        enum: ['Paid', 'Unpaid', 'Pending'],
-        default: function() {
-            return this.role === 'super_admin' ? 'Paid' : 'Unpaid';
-        }
-    },
-    licenseStatus: {
+paymentStatus: {
+    type: String,
+    enum: ['Paid', 'Unpaid', 'Pending', 'paid'],
+    default: function() {
+        return this.role === 'admin' ? 'Paid' : 'Unpaid';
+    }
+}, licenseStatus: {
         type: String,
         enum: ['active', 'expired'],
         default: 'active'
