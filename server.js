@@ -20,10 +20,10 @@ mongoose.connect(process.env.MONGO_URI)
 
 const { registerUser, loginUser, getUserProfile, updateCompanyName } = require('./controllers/authController');
 
-app.post('/api/register', registerUser);
-app.post('/api/login', loginUser);
-app.get('/api/profile', getUserProfile);
-app.put('/api/update-company', updateCompanyName);
+app.post('/api/auth/register', registerUser);
+app.post('/api/auth/login', loginUser);
+app.get('/api/auth/profile', getUserProfile);
+app.put('/api/auth/update-company', updateCompanyName);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
