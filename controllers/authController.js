@@ -1,31 +1,8 @@
-[3:23 am, 16/7/2026] P: const User = require('../models/User');
+const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const registerUser = async (req, res) => {
-    try {
-        const { name, email, password, phone, role, adminId } = req.body;
-
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ message: 'This email is already registered!' });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newUser = new User({
-            name,
-            email,
-            password: hashedPassword,
-            phone,
-            role: role || 'user', 
-            isApproved: false,
-            paymentStatus: 'Pen…
-[3:24 am, 16/7/2026] P: const User = require('../models/User');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
+// 1. Register User
 const registerUser = async (req, res) => {
     try {
         const { name, email, password, phone, role, adminId } = req.body;
@@ -65,6 +42,7 @@ const registerUser = async (req, res) => {
     }
 };
 
+// 2. Login User
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -117,6 +95,7 @@ const loginUser = async (req, res) => {
     }
 };
 
+// 3. Get User Profile
 const getUserProfile = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
@@ -130,6 +109,7 @@ const getUserProfile = async (req, res) => {
     }
 };
 
+// 4. Update Company Name
 const updateCompanyName = async (req, res) => {
     try {
         const { companyName } = req.body;
@@ -146,6 +126,7 @@ const updateCompanyName = async (req, res) => {
     }
 };
 
+// 5. Get Pending Users
 const getPendingUsers = async (req, res) => {
     try {
         const pendingUsers = await User.find({ isApproved: false }).select('-password');
@@ -155,6 +136,7 @@ const getPendingUsers = async (req, res) => {
     }
 };
 
+// 6. Approve or Block User
 const approveOrBlockUser = async (req, res) => {
     try {
         const { userId, action } = req.body;
@@ -179,6 +161,7 @@ const approveOrBlockUser = async (req, res) => {
     }
 };
 
+// 7. Forgot Password
 const forgotPassword = async (req, res) => {
     try {
         const { email, securityAnswer1, securityAnswer2, newPassword } = req.body;
